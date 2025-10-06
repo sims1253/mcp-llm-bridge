@@ -1,0 +1,120 @@
+# Multi-LLM Conversation Tools
+
+This project has MCP tools for orchestrating conversations between multiple LLMs using configurable adapters.
+
+## Quick Start
+
+1. **Check available adapters**: Use `list_adapters` tool
+2. **Create conversation**: Use `create_conversation` with an initial question
+3. **Call LLMs**: Use `call_llm` with different adapter names
+4. **Check progress**: Use `get_recent_messages` or `get_conversation_summary`
+
+## Available Tools
+
+### list_adapters
+See which LLM adapters are configured.
+
+**Example:**
+```
+list_adapters: {}
+```
+
+### create_conversation
+Start a new multi-LLM conversation.
+
+**Example:**
+```
+create_conversation:
+  initial_message: "Compare quicksort vs mergesort performance"
+  topic: "Sorting algorithms debate"
+```
+
+### call_llm
+Call any configured LLM adapter. The tool manages conversation history internally.
+
+**Example:**
+```
+call_llm:
+  conversation_id: "conversation_20251006_103000"
+  adapter_name: "my-claude"
+  message: "What's your analysis?"
+```
+
+### get_recent_messages
+Check what's been said recently without loading full history.
+
+**Example:**
+```
+get_recent_messages:
+  conversation_id: "conversation_20251006_103000"
+  count: 5
+```
+
+### get_conversation_summary
+Get overview including participants, message count, and metadata.
+
+### list_conversations
+See all available conversations.
+
+## Configuration
+
+Adapters are configured in `~/.mcp-llm-bridge/adapters.json`
+
+The user should have already set this up with their LLM CLI tools (claude, glm, codex, etc.)
+
+## Example Workflow
+
+```
+You: "I want Claude and GPT to debate sorting algorithms"
+
+Your process:
+1. create_conversation:
+     initial_message: "What is the best general-purpose sorting algorithm?"
+
+   [Returns: conversation_id]
+
+2. call_llm:
+     conversation_id: <id from step 1>
+     adapter_name: "my-claude"
+     message: "Please analyze this question"
+
+   [Returns: Claude's response]
+
+3. get_recent_messages:
+     conversation_id: <id>
+     count: 2
+
+   [See what's been said so far]
+
+4. call_llm:
+     conversation_id: <id>
+     adapter_name: "my-gpt"
+     message: "Claude says quicksort is best. What's your take?"
+
+   [Returns: GPT's response]
+
+5. Continue back and forth, or summarize for the user
+```
+
+## Best Practices
+
+- **Use smart context mode** (default): Passes first message + last 5 messages
+- **Check recent messages** before each turn to understand current state
+- **Don't read conversation files directly**: Use the tools
+- **Let tools manage history**: Focus on orchestration, not file I/O
+- **Test adapters**: Use `list_adapters` with test_availability
+
+## Context Modes
+
+- `smart`: Initial message + last 5 (recommended)
+- `recent`: Last 10 messages
+- `minimal`: Only last message
+- `none`: No history
+- `full`: Entire conversation (use sparingly)
+
+## Troubleshooting
+
+If an adapter fails:
+- Check it's configured in adapters.json
+- Verify the CLI tool is installed and in PATH
+- Use `list_adapters` with `test_availability: true`
