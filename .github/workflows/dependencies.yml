@@ -1,0 +1,63 @@
+name: Dependencies
+
+on:
+  schedule:
+    # Run at 00:00 UTC every Monday
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'sims1253'  # Only run in original repo
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+
+    - name: Update dependencies
+      run: |
+        uv sync --upgrade
+        uv pip install --upgrade pip setuptools wheel
+
+    - name: Run tests
+      run: uv run pytest
+
+    - name: Run ruff checks
+      run: uv run ruff check
+
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Pull Request
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: update dependencies"
+        title: "chore: update dependencies"
+        body: |
+          Automated dependency update
+
+          - Updated to latest versions of dependencies
+          - All tests pass
+          - Code quality checks pass
+        branch: dependencies/update
+        delete-branch: true

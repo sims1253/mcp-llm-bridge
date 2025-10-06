@@ -1,14 +1,24 @@
 # MCP LLM Bridge
 
-An MCP (Model Context Protocol) server that enables Claude Code to orchestrate multi-LLM conversations using configurable adapters.
+![CI](https://github.com/sims1253/mcp-llm-bridge/workflows/CI/badge.svg)
+![Code Quality](https://github.com/sims1253/mcp-llm-bridge/workflows/Code%20Quality/badge.svg)
 
-## Features
+An MCP (Model Context Protocol) server for managing multi-LLM conversations with configurable adapters.
 
-- **Universal adapter system**: Configure any LLM CLI tool (Claude, GPT, Codex, Ollama, etc.)
-- **Conversation management**: Persistent JSONL-based conversation history
-- **Smart context selection**: Automatically select relevant history to pass to LLMs
-- **Multiple context modes**: full, recent, smart, minimal, none
-- **Portable**: Share the server, users configure their own adapters
+## Overview
+
+This server provides tools to:
+- Configure any LLM CLI tool (Claude, GPT, Ollama, etc.) as an adapter
+- Store and retrieve conversation history in JSONL format
+- Select appropriate context when calling LLMs
+- Orchestrate conversations between multiple LLMs
+
+## Components
+
+- **ConversationManager**: JSONL file I/O and metadata management
+- **AdapterManager**: Bash-based LLM adapter execution
+- **ContextSelector**: Conversation history selection (smart, recent, full, minimal, none)
+- **MCP Server**: Six tools for conversation management
 
 ## Installation
 
@@ -106,7 +116,7 @@ The MCP server will be available after restart.
 
 See `examples/CLAUDE.md.example` for detailed usage instructions to add to your project.
 
-### Quick Example
+### Usage Example
 
 ```
 1. list_adapters: {}
@@ -174,28 +184,30 @@ Invokes: `codex --non-interactive "message"`
 
 ## Development
 
-### Run Tests
+### Setup Development Environment
 
 ```bash
-pytest
+# Clone and set up
+git clone git@github.com:sims1253/mcp-llm-bridge.git
+cd mcp-llm-bridge
+
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -e ".[dev]"
+
+```bash
+pytest                    # Run test suite
+uv run python simple_test.py  # Basic functionality test
+uv run python interact.py     # Interactive session
 ```
 
-### Format Code
+## Code Quality
 
 ```bash
-uv run ruff format
-```
-
-### Lint Code
-
-```bash
-uv run ruff check
-```
-
-### Type Check
-
-```bash
-uv run ruff check --select=UP
+uv run ruff format      # Format code
+uv run ruff check       # Lint code
+uv run ruff check --select=UP  # Type check
 ```
 
 ## Troubleshooting
