@@ -1,0 +1,49 @@
+{
+  "adapters": {
+    "my-claude": {
+      "type": "bash",
+      "command": "claude",
+      "args": [],
+      "input_method": "stdin",
+      "description": "Claude via Anthropic CLI"
+    },
+    "my-codex": {
+      "type": "bash",
+      "command": "codex",
+      "args": ["--non-interactive"],
+      "input_method": "stdin",
+      "description": "GitHub Codex CLI"
+    },
+    "my-glm": {
+      "type": "bash",
+      "command": "glm",
+      "args": ["--model", "glm-4-plus", "--no-stream"],
+      "input_method": "stdin",
+      "description": "GLM via CLI"
+    },
+    "gemini-flash": {
+      "type": "bash",
+      "command": "gemini-cli",
+      "args": ["--model", "gemini-1.5-flash"],
+      "input_method": "stdin",
+      "description": "Gemini via custom CLI"
+    },
+    "local-ollama": {
+      "type": "bash",
+      "command": "ollama",
+      "args": ["run", "llama3.1", "--nowordwrap"],
+      "input_method": "stdin",
+      "description": "Local Llama via Ollama"
+    },
+    "echo-test": {
+      "type": "bash",
+      "command": "echo",
+      "args": ["You said:"],
+      "input_method": "arg",
+      "message_arg_template": "{message}",
+      "description": "Simple echo for testing"
+    }
+  },
+  "default_adapter": "my-claude",
+  "_comment": "Copy this to ~/.mcp-llm-bridge/adapters.json and edit to match your LLM CLI tools"
+}
