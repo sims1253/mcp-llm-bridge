@@ -30,9 +30,7 @@ MCP server for multi-LLM conversations with configurable bash adapters.
 
 ```bash
 cd mcp-llm-bridge
-uv venv
-source .venv/bin/activate
-uv pip install -e .
+uv sync
 ```
 
 Or with pip:
@@ -179,9 +177,7 @@ Conversation IDs use timestamp with random suffix to prevent collisions.
 ```bash
 git clone git@github.com:sims1253/mcp-llm-bridge.git
 cd mcp-llm-bridge
-uv venv
-source .venv/bin/activate
-uv pip install -e ".[dev]"
+uv sync --all-extras
 ```
 
 ### Tests
