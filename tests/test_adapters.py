@@ -15,15 +15,15 @@ def temp_adapter_manager(tmp_path):
 
 @pytest.fixture
 def echo_adapter_config(tmp_path):
-    """Create a simple echo adapter configuration"""
+    """Create a simple adapter configuration for testing"""
     config = {
         "adapters": {
             "echo": {
                 "type": "bash",
-                "command": "echo",
+                "command": "cat",  # Use cat instead of echo for stdin tests
                 "args": [],
                 "input_method": "stdin",
-                "description": "Simple echo adapter",
+                "description": "Simple cat adapter for stdin testing",
             },
             "echo-arg": {
                 "type": "bash",
@@ -53,7 +53,7 @@ def echo_adapter_config(tmp_path):
 
 @pytest.mark.asyncio
 async def test_call_echo_adapter(echo_adapter_config):
-    """Test calling a simple echo adapter"""
+    """Test calling a simple stdin adapter (cat)"""
     manager = AdapterManager(echo_adapter_config)
 
     # Call adapter
@@ -135,7 +135,7 @@ async def test_adapter_without_history(echo_adapter_config):
         pass_history=False,
     )
 
-    # Should only contain the new message
+    # Should only contain the new message (using cat which echoes stdin)
     assert result["response"] == "New message"
     assert "Previous message" not in result["response"]
 
@@ -196,8 +196,8 @@ def test_list_adapters(echo_adapter_config):
     # Check echo adapter
     echo_adapter = next(a for a in adapters if a["name"] == "echo")
     assert echo_adapter["type"] == "bash"
-    assert echo_adapter["description"] == "Simple echo adapter"
-    assert echo_adapter["command"] == "echo"
+    assert echo_adapter["description"] == "Simple cat adapter for stdin testing"
+    assert echo_adapter["command"] == "cat"
 
     assert adapters_info["default_adapter"] == "echo"
 

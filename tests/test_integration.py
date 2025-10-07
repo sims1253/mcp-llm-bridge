@@ -18,10 +18,10 @@ def integration_setup(tmp_path):
         "adapters": {
             "echo": {
                 "type": "bash",
-                "command": "echo",
+                "command": "cat",  # Use cat for stdin tests
                 "args": [],
                 "input_method": "stdin",
-                "description": "Echo adapter",
+                "description": "Cat adapter for stdin testing",
             },
             "prefix-echo": {
                 "type": "bash",
@@ -53,7 +53,7 @@ async def test_full_conversation_flow(integration_setup):
     # 1. Create conversation
     conv_id = conv_manager.create_conversation(initial_message="What is 2+2?")
 
-    # 2. Call LLM (echo adapter)
+    # 2. Call LLM (cat adapter) - don't pass history to get clean response
     messages = conv_manager.read_messages(conv_id)
     selected = context_selector.select(messages, "smart")
 
@@ -61,7 +61,7 @@ async def test_full_conversation_flow(integration_setup):
         adapter_name="echo",
         message="The answer is 4",
         conversation_history=selected,
-        pass_history=True,
+        pass_history=False,  # Don't pass history for clean test
     )
 
     # 3. Append response

@@ -53,18 +53,18 @@ def test_select_recent_mode(context_selector, sample_messages):
 
 def test_select_recent_mode_truncated(context_selector):
     """Test 'recent' context mode with more than 10 messages"""
-    messages = [{"turn": i, "content": f"Message {i}"} for i in range(15)]
+    messages = [{"turn": i, "content": f"Message {i}"} for i in range(1, 16)]
 
     selected = context_selector.select(messages, "recent")
     assert len(selected) == 10
     assert selected[0]["turn"] == 6  # Should be last 10 messages
-    assert selected[-1]["turn"] == 14
+    assert selected[-1]["turn"] == 15
 
 
 def test_select_smart_mode_short(context_selector, sample_messages):
     """Test 'smart' context mode with short conversation"""
     selected = context_selector.select(sample_messages, "smart")
-    assert len(selected) == len(sample_messages)  # 8 messages, less than 6
+    assert len(selected) == len(sample_messages)  # 8 messages, less than 10
     assert selected == sample_messages
 
 

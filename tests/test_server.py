@@ -12,10 +12,10 @@ def test_server_imports():
     from mcp_llm_bridge import server
 
     # Check that required components are initialized
-    assert hasattr(server, 'mcp')
-    assert hasattr(server, 'conversation_manager')
-    assert hasattr(server, 'adapter_manager')
-    assert hasattr(server, 'context_selector')
+    assert hasattr(server, "mcp")
+    assert hasattr(server, "conversation_manager")
+    assert hasattr(server, "adapter_manager")
+    assert hasattr(server, "context_selector")
 
     # Check that components are properly initialized
     assert server.conversation_manager is not None
@@ -25,7 +25,12 @@ def test_server_imports():
 
 def test_server_components_initialization():
     """Test that server components are properly initialized at module level"""
-    from mcp_llm_bridge.server import conversation_manager, adapter_manager, context_selector, mcp
+    from mcp_llm_bridge.server import (
+        conversation_manager,
+        adapter_manager,
+        context_selector,
+        mcp,
+    )
 
     # Verify components are instances of expected classes
     from mcp_llm_bridge.conversation import ConversationManager
@@ -37,8 +42,8 @@ def test_server_components_initialization():
     assert isinstance(context_selector, ContextSelector)
 
     # Verify MCP server is properly initialized
-    assert hasattr(mcp, 'run')
-    assert hasattr(mcp, 'tool')
+    assert hasattr(mcp, "run")
+    assert hasattr(mcp, "tool")
 
 
 def test_server_tools_registration():
@@ -49,19 +54,25 @@ def test_server_tools_registration():
     import mcp_llm_bridge.server as server_module
 
     expected_tools = [
-        'create_conversation',
-        'call_llm',
-        'get_recent_messages',
-        'get_conversation_summary',
-        'list_conversations',
-        'list_adapters'
+        "create_conversation",
+        "call_llm",
+        "get_recent_messages",
+        "get_conversation_summary",
+        "list_conversations",
+        "list_adapters",
     ]
 
     for tool_name in expected_tools:
         assert hasattr(server_module, tool_name), f"Tool {tool_name} not found"
         tool_func = getattr(server_module, tool_name)
-        # FastMCP decorates functions into FunctionTool objects, so we check for callability
-        assert callable(tool_func), f"Tool {tool_name} is not callable"
+        # FastMCP decorates functions into FunctionTool objects
+        # Check for FunctionTool attributes instead of callable
+        assert hasattr(tool_func, "name"), (
+            f"Tool {tool_name} should have name attribute"
+        )
+        assert hasattr(tool_func, "description"), (
+            f"Tool {tool_name} should have description attribute"
+        )
 
 
 def test_server_configuration_paths():
@@ -73,8 +84,12 @@ def test_server_configuration_paths():
     assert isinstance(ADAPTER_CONFIG, Path)
 
     # Check that paths are expanded (user home paths should be expanded)
-    assert str(CONVERSATION_DIR).startswith("/home") or str(CONVERSATION_DIR).startswith(str(Path.home()))
-    assert str(ADAPTER_CONFIG).startswith("/home") or str(ADAPTER_CONFIG).startswith(str(Path.home()))
+    assert str(CONVERSATION_DIR).startswith("/home") or str(
+        CONVERSATION_DIR
+    ).startswith(str(Path.home()))
+    assert str(ADAPTER_CONFIG).startswith("/home") or str(ADAPTER_CONFIG).startswith(
+        str(Path.home())
+    )
 
 
 def test_server_module_execution():
@@ -83,8 +98,8 @@ def test_server_module_execution():
     import mcp_llm_bridge.server as server_module
 
     # Check that the module has the expected main execution pattern
-    assert hasattr(server_module, 'mcp')
-    assert hasattr(server_module.mcp, 'run')
+    assert hasattr(server_module, "mcp")
+    assert hasattr(server_module.mcp, "run")
 
 
 @pytest.mark.asyncio
@@ -106,7 +121,7 @@ async def test_server_component_functionality():
         assert len(conversations) >= 1
 
     # Test adapter manager with temporary config
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         config_path = Path(f.name)
         test_config = {
             "adapters": {
@@ -115,10 +130,10 @@ async def test_server_component_functionality():
                     "command": "echo",
                     "args": ["test"],
                     "input_method": "stdin",
-                    "description": "Test echo adapter"
+                    "description": "Test echo adapter",
                 }
             },
-            "default_adapter": "test-echo"
+            "default_adapter": "test-echo",
         }
         json.dump(test_config, f)
 
@@ -140,12 +155,16 @@ def test_fastmcp_api_compatibility():
     from mcp_llm_bridge.server import mcp
 
     # Test that FastMCP instance has expected methods
-    assert hasattr(mcp, 'run'), "FastMCP instance should have run() method"
-    assert callable(getattr(mcp, 'run')), "run() should be callable"
+    assert hasattr(mcp, "run"), "FastMCP instance should have run() method"
+    assert callable(getattr(mcp, "run")), "run() should be callable"
 
     # Test that we don't have deprecated methods
-    assert not hasattr(mcp, 'set_lifespan'), "set_lifespan() should not exist (deprecated FastMCP API)"
-    assert not hasattr(mcp, 'create_initialization_options'), "create_initialization_options() should not exist (deprecated FastMCP API)"
+    assert not hasattr(mcp, "set_lifespan"), (
+        "set_lifespan() should not exist (deprecated FastMCP API)"
+    )
+    assert not hasattr(mcp, "create_initialization_options"), (
+        "create_initialization_options() should not exist (deprecated FastMCP API)"
+    )
 
 
 def test_no_asyncio_main_function():
@@ -154,25 +173,35 @@ def test_no_asyncio_main_function():
     import inspect
 
     # Check that we don't have an async main function
-    if hasattr(server_module, 'main'):
-        main_func = getattr(server_module, 'main')
-        assert not inspect.iscoroutinefunction(main_func), "main() should not be async (use mcp.run() directly)"
+    if hasattr(server_module, "main"):
+        main_func = getattr(server_module, "main")
+        assert not inspect.iscoroutinefunction(main_func), (
+            "main() should not be async (use mcp.run() directly)"
+        )
 
 
 def test_tool_signatures():
-    """Test that tool functions have correct signatures"""
+    """Test that tool functions have correct structure"""
     import mcp_llm_bridge.server as server_module
 
-    # Check create_conversation exists and is callable
-    create_conv = getattr(server_module, 'create_conversation')
-    assert callable(create_conv), "create_conversation should be callable"
+    # Check create_conversation exists and has FunctionTool attributes
+    create_conv = getattr(server_module, "create_conversation")
+    assert hasattr(create_conv, "name"), (
+        "create_conversation should have name attribute"
+    )
+    assert hasattr(create_conv, "description"), (
+        "create_conversation should have description attribute"
+    )
 
-    # Check call_llm exists and is callable
-    call_llm = getattr(server_module, 'call_llm')
-    assert callable(call_llm), "call_llm should be callable"
+    # Check call_llm exists and has FunctionTool attributes
+    call_llm = getattr(server_module, "call_llm")
+    assert hasattr(call_llm, "name"), "call_llm should have name attribute"
+    assert hasattr(call_llm, "description"), (
+        "call_llm should have description attribute"
+    )
 
     # FastMCP FunctionTool objects don't expose function signatures the same way
-    # but they should be callable and have the expected structure
+    # but they should have the expected FunctionTool structure
 
 
 def test_server_error_handling():
@@ -186,6 +215,7 @@ def test_server_error_handling():
 
         # This should not raise an exception during import
         from mcp_llm_bridge.adapters import AdapterManager
+
         AdapterManager(fake_config)
 
         # Should create a default config

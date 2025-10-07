@@ -5,7 +5,6 @@ import asyncio
 import json
 import subprocess
 import sys
-from pathlib import Path
 
 
 async def send_jsonrpc_request(proc, request):
@@ -31,7 +30,7 @@ async def interactive_session():
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
     )
 
     try:
@@ -44,8 +43,8 @@ async def interactive_session():
             "params": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "clientInfo": {"name": "interactive-client", "version": "1.0.0"}
-            }
+                "clientInfo": {"name": "interactive-client", "version": "1.0.0"},
+            },
         }
 
         response = await send_jsonrpc_request(proc, init_request)
@@ -61,7 +60,7 @@ async def interactive_session():
             "jsonrpc": "2.0",
             "id": 2,
             "method": "tools/list",
-            "params": {}
+            "params": {},
         }
 
         response = await send_jsonrpc_request(proc, tools_request)
@@ -84,35 +83,39 @@ async def interactive_session():
             try:
                 user_input = input("\n👤 You: ").strip()
 
-                if user_input.lower() in ['quit', 'exit', 'q']:
+                if user_input.lower() in ["quit", "exit", "q"]:
                     break
 
-                if user_input.startswith('create '):
+                if user_input.startswith("create "):
                     message = user_input[7:]
                     await create_conversation(proc, message)
 
-                elif user_input == 'adapters':
+                elif user_input == "adapters":
                     await list_adapters(proc)
 
-                elif user_input.startswith('list'):
+                elif user_input.startswith("list"):
                     await list_conversations(proc)
 
-                elif user_input.startswith('recent '):
+                elif user_input.startswith("recent "):
                     parts = user_input.split()
                     conv_id = parts[1]
                     count = int(parts[2]) if len(parts) > 2 else 5
                     await get_recent_messages(proc, conv_id, count)
 
-                elif user_input.startswith('call '):
+                elif user_input.startswith("call "):
                     parts = user_input.split(maxsplit=3)
                     if len(parts) >= 4:
                         conv_id, adapter_name, message = parts[1], parts[2], parts[3]
                         await call_llm(proc, conv_id, adapter_name, message)
                     else:
-                        print("❌ Usage: call <conversation_id> <adapter_name> <message>")
+                        print(
+                            "❌ Usage: call <conversation_id> <adapter_name> <message>"
+                        )
 
                 else:
-                    print("❌ Unknown command. Try: create, adapters, list, recent, call, quit")
+                    print(
+                        "❌ Unknown command. Try: create, adapters, list, recent, call, quit"
+                    )
 
             except KeyboardInterrupt:
                 break
@@ -133,10 +136,8 @@ async def create_conversation(proc, message):
         "method": "tools/call",
         "params": {
             "name": "create_conversation",
-            "arguments": {
-                "initial_message": message
-            }
-        }
+            "arguments": {"initial_message": message},
+        },
     }
 
     response = await send_jsonrpc_request(proc, request)
@@ -157,10 +158,7 @@ async def list_adapters(proc):
         "jsonrpc": "2.0",
         "id": 4,
         "method": "tools/call",
-        "params": {
-            "name": "list_adapters",
-            "arguments": {"test_availability": True}
-        }
+        "params": {"name": "list_adapters", "arguments": {"test_availability": True}},
     }
 
     response = await send_jsonrpc_request(proc, request)
@@ -181,10 +179,7 @@ async def list_conversations(proc):
         "jsonrpc": "2.0",
         "id": 5,
         "method": "tools/call",
-        "params": {
-            "name": "list_conversations",
-            "arguments": {"limit": 10}
-        }
+        "params": {"name": "list_conversations", "arguments": {"limit": 10}},
     }
 
     response = await send_jsonrpc_request(proc, request)
@@ -195,7 +190,9 @@ async def list_conversations(proc):
             data = json.loads(content)
             print(f"💬 Found {data['total']} conversations:")
             for conv in data.get("conversations", []):
-                print(f"   📁 {conv['id']} - {conv['message_count']} messages - {conv['updated_at']}")
+                print(
+                    f"   📁 {conv['id']} - {conv['message_count']} messages - {conv['updated_at']}"
+                )
 
 
 async def get_recent_messages(proc, conv_id, count=5):
@@ -206,11 +203,8 @@ async def get_recent_messages(proc, conv_id, count=5):
         "method": "tools/call",
         "params": {
             "name": "get_recent_messages",
-            "arguments": {
-                "conversation_id": conv_id,
-                "count": count
-            }
-        }
+            "arguments": {"conversation_id": conv_id, "count": count},
+        },
     }
 
     response = await send_jsonrpc_request(proc, request)
@@ -233,9 +227,9 @@ async def call_llm(proc, conv_id, adapter_name, message):
             "arguments": {
                 "conversation_id": conv_id,
                 "adapter_name": adapter_name,
-                "message": message
-            }
-        }
+                "message": message,
+            },
+        },
     }
 
     print(f"🤖 Calling {adapter_name}...")

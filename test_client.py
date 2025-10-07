@@ -16,7 +16,7 @@ async def test_mcp_server():
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
     )
 
     try:
@@ -27,14 +27,9 @@ async def test_mcp_server():
             "method": "initialize",
             "params": {
                 "protocolVersion": "2024-11-05",
-                "capabilities": {
-                    "tools": {}
-                },
-                "clientInfo": {
-                    "name": "test-client",
-                    "version": "1.0.0"
-                }
-            }
+                "capabilities": {"tools": {}},
+                "clientInfo": {"name": "test-client", "version": "1.0.0"},
+            },
         }
 
         # Send request
@@ -54,7 +49,7 @@ async def test_mcp_server():
             "jsonrpc": "2.0",
             "id": 2,
             "method": "tools/list",
-            "params": {}
+            "params": {},
         }
 
         request_str = json.dumps(tools_request) + "\n"
@@ -80,9 +75,9 @@ async def test_mcp_server():
                 "name": "create_conversation",
                 "arguments": {
                     "initial_message": "Hello, this is a test conversation!",
-                    "topic": "Testing MCP Server"
-                }
-            }
+                    "topic": "Testing MCP Server",
+                },
+            },
         }
 
         request_str = json.dumps(create_conv_request) + "\n"
@@ -104,10 +99,7 @@ async def test_mcp_server():
             "jsonrpc": "2.0",
             "id": 4,
             "method": "tools/call",
-            "params": {
-                "name": "list_adapters",
-                "arguments": {}
-            }
+            "params": {"name": "list_adapters", "arguments": {}},
         }
 
         request_str = json.dumps(list_adapters_request) + "\n"
@@ -125,7 +117,7 @@ async def test_mcp_server():
                 adapters_info = json.loads(content["text"])
                 print(f"Default adapter: {adapters_info.get('default_adapter')}")
                 print(f"Available adapters: {len(adapters_info.get('adapters', []))}")
-                for adapter in adapters_info.get('adapters', []):
+                for adapter in adapters_info.get("adapters", []):
                     print(f"  - {adapter['name']}: {adapter['description']}")
 
         print("\n🎉 All tests completed successfully!")

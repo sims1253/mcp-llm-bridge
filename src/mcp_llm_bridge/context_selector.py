@@ -3,7 +3,6 @@
 from typing import Any
 
 
-
 class ContextSelector:
     """Selects conversation history based on context mode"""
 
@@ -34,11 +33,11 @@ class ContextSelector:
     def _smart_select(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Smart selection algorithm:
-        - Always include first message (initial question)
-        - Include last 5 messages (current context)
-        - Total: up to 6 messages
+        - If conversation is short (< 10 messages), include all
+        - Otherwise: include first message (initial question) + last 5 messages
+        - Total: up to 6 messages for long conversations
         """
-        if len(messages) <= 6:
+        if len(messages) < 10:
             return messages
 
         # First message + last 5

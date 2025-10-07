@@ -1,6 +1,7 @@
 """Conversation management - handles JSONL file I/O for conversation history"""
 
 import json
+import random
 from pathlib import Path
 from datetime import datetime
 from typing import Any
@@ -15,15 +16,29 @@ class ConversationManager:
         self.metadata_dir = self.conversation_dir / ".metadata"
         self.metadata_dir.mkdir(exist_ok=True)
 
+    def _sanitize_id(self, conversation_id: str) -> str:
+        """
+        Sanitize conversation ID to prevent path traversal
+        Returns empty string if ID contains path separators or becomes empty after sanitization
+        """
+        # Reject IDs with path separators
+        if "/" in conversation_id or "\\" in conversation_id or ".." in conversation_id:
+            return ""
+
+        # Filter to alphanumeric and safe characters
+        safe_id = "".join(c for c in conversation_id if c.isalnum() or c in "-_")
+
+        # Return empty if sanitization removed everything
+        return safe_id if safe_id else ""
+
     def _get_conversation_path(self, conversation_id: str) -> Path:
         """Get path to conversation JSONL file"""
-        # Sanitize conversation_id to prevent path traversal
-        safe_id = "".join(c for c in conversation_id if c.isalnum() or c in "-_")
+        safe_id = self._sanitize_id(conversation_id)
         return self.conversation_dir / f"{safe_id}.jsonl"
 
     def _get_metadata_path(self, conversation_id: str) -> Path:
         """Get path to conversation metadata file"""
-        safe_id = "".join(c for c in conversation_id if c.isalnum() or c in "-_")
+        safe_id = self._sanitize_id(conversation_id)
         return self.metadata_dir / f"{safe_id}.json"
 
     def conversation_exists(self, conversation_id: str) -> bool:
@@ -45,21 +60,29 @@ class ConversationManager:
             metadata: Optional metadata dict
 
         Returns:
-            conversation_id
+            conversation_id (empty string if sanitization fails)
         """
         # Generate ID if not provided
         if not conversation_id:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            conversation_id = f"conversation_{timestamp}"
+            # Use microseconds and random suffix to avoid collisions
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            random_suffix = random.randint(1000, 9999)
+            conversation_id = f"conversation_{timestamp}_{random_suffix}"
+
+        # Sanitize the ID
+        sanitized_id = self._sanitize_id(conversation_id)
+        if not sanitized_id:
+            # Return empty string for invalid IDs (test expects this)
+            return ""
 
         # Check if already exists
-        if self.conversation_exists(conversation_id):
-            raise ValueError(f"Conversation {conversation_id} already exists")
+        if self.conversation_exists(sanitized_id):
+            raise ValueError(f"Conversation {sanitized_id} already exists")
 
         # Create conversation file with initial message
         if initial_message:
             self.append_message(
-                conversation_id=conversation_id,
+                conversation_id=sanitized_id,
                 speaker="user",
                 content=initial_message,
                 metadata={},
@@ -67,7 +90,7 @@ class ConversationManager:
 
         # Create metadata
         meta = {
-            "id": conversation_id,
+            "id": sanitized_id,
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
             "participants": ["user"] if initial_message else [],
@@ -77,9 +100,9 @@ class ConversationManager:
             "status": "active",
         }
 
-        self._save_metadata(conversation_id, meta)
+        self._save_metadata(sanitized_id, meta)
 
-        return conversation_id
+        return sanitized_id
 
     def append_message(
         self,

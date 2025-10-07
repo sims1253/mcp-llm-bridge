@@ -5,7 +5,8 @@ import subprocess
 import sys
 import time
 
-def test_server_startup():
+
+def check_server_startup():
     """Test that the server starts without errors"""
     print("🚀 Testing MCP server startup...")
 
@@ -16,7 +17,7 @@ def test_server_startup():
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
 
         # Give it a moment to start
@@ -41,12 +42,14 @@ def test_server_startup():
         print(f"❌ Error: {e}")
         return False
 
-def test_import():
+
+def check_import():
     """Test that the module can be imported"""
     print("📦 Testing module import...")
 
     try:
         from mcp_llm_bridge import server
+
         print("✅ Module imported successfully!")
 
         # Check components
@@ -60,12 +63,13 @@ def test_import():
         print(f"❌ Import failed: {e}")
         return False
 
+
 if __name__ == "__main__":
     print("🧪 Running MCP LLM Bridge Tests")
     print("=" * 50)
 
-    import_success = test_import()
-    startup_success = test_server_startup()
+    import_success = check_import()
+    startup_success = check_server_startup()
 
     print("=" * 50)
     if import_success and startup_success:
