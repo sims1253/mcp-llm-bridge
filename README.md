@@ -5,16 +5,18 @@
 
 MCP server for multi-LLM conversations with configurable bash adapters.
 
+This project was mostly implemented by claude sonnet 4.5 via claude code.
+
 ## Functionality
 
 - Configure LLM CLI tools as adapters
-- Store conversation history in JSONL format
+- Store conversation history in JSON format
 - Select context for LLM calls (smart, recent, full, minimal, none)
 - Call multiple LLMs in the same conversation
 
 ## Components
 
-- ConversationManager: JSONL file I/O and metadata management
+- ConversationManager: JSON file I/O and metadata management
 - AdapterManager: Bash-based LLM adapter execution
 - ContextSelector: Conversation history selection (smart, recent, full, minimal, none)
 - MCP Server: Six tools for conversation management
@@ -48,26 +50,33 @@ Create `~/.mcp-llm-bridge/adapters.json`:
 ```json
 {
   "adapters": {
-    "my-claude": {
+    "claude": {
       "type": "bash",
       "command": "claude",
+      "args": ["-p"],
+      "input_method": "stdin",
+      "description": "Claude Sonnet 4.5 via claude code CLI"
+    },
+    "qwen": {
+      "type": "bash",
+      "command": "qwen",
+      "args": ["-p"],
+      "input_method": "stdin",
+      "description": "qwen coder via qwen CLI"
+    },
+    "gemini": {
+      "type": "bash",
+      "command": "gemini",
       "args": [],
       "input_method": "stdin",
-      "description": "Claude via Anthropic CLI"
-    },
-    "my-glm": {
-      "type": "bash",
-      "command": "glm",
-      "args": ["--no-stream"],
-      "input_method": "stdin",
-      "description": "GLM via CLI"
+      "description": "gemini gemini-2.5-pro via gemini CLI"
     }
   },
-  "default_adapter": "my-claude"
+  "default_adapter": "claude"
 }
 ```
 
-See `examples/adapters.json.example`.
+See `examples/adapters.json.example` for more examples including GPT, LM Studio, and Ollama.
 
 ### 2. Configure MCP Client
 
@@ -131,14 +140,15 @@ Example workflow:
 
 ### stdin
 
-Passes message to stdin:
+Passes message to stdin (most common):
 
 ```json
 {
   "type": "bash",
   "command": "claude",
-  "args": [],
-  "input_method": "stdin"
+  "args": ["-p"],
+  "input_method": "stdin",
+  "description": "Claude via Anthropic CLI"
 }
 ```
 
@@ -149,16 +159,45 @@ Passes message as argument:
 ```json
 {
   "type": "bash",
-  "command": "codex",
-  "args": ["--non-interactive"],
+  "command": "echo",
+  "args": ["You said:"],
   "input_method": "arg",
-  "message_arg_template": "{message}"
+  "message_arg_template": "{message}",
+  "description": "Simple echo for testing"
+}
+```
+
+### LM Studio
+
+For OpenAI-compatible APIs like LM Studio (requires `jq`):
+
+```json
+{
+  "type": "bash",
+  "command": "bash",
+  "args": ["-c", "jq -Rs '{messages: [{role: \"user\", content: .}], temperature: 0.7, max_tokens: -1}' | curl -s -X POST http://localhost:1234/v1/chat/completions -H 'Content-Type: application/json' -d @- | jq -r '.choices[0].message.content // .error.message // \"No response\"'"],
+  "input_method": "stdin",
+  "description": "Local LM Studio server"
+}
+```
+
+Enable "Serve on Local Network" in LM Studio settings if running from WSL.
+
+### GPT via Codex CLI
+
+```json
+{
+  "type": "bash",
+  "command": "codex",
+  "args": ["exec"],
+  "input_method": "stdin",
+  "description": "GPT-5 via codex CLI"
 }
 ```
 
 ## File Structure
 
-- `~/.mcp-llm-bridge/conversations/`: JSONL files (one JSON object per line)
+- `~/.mcp-llm-bridge/conversations/`: JSON array files (one message per array element)
 - `~/.mcp-llm-bridge/conversations/.metadata/`: JSON metadata
 - `~/.mcp-llm-bridge/adapters.json`: Adapter configuration
 

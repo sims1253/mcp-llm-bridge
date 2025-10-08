@@ -1,39 +1,39 @@
 {
   "adapters": {
-    "my-claude": {
+    "claude": {
       "type": "bash",
       "command": "claude",
+      "args": ["-p"],
+      "input_method": "stdin",
+      "description": "Claude Sonnet 4.5 via claude code CLI"
+    },
+    "qwen": {
+      "type": "bash",
+      "command": "qwen",
+      "args": ["-p"],
+      "input_method": "stdin",
+      "description": "qwen coder via qwen CLI"
+    },
+    "gemini": {
+      "type": "bash",
+      "command": "gemini",
       "args": [],
       "input_method": "stdin",
-      "description": "Claude via Anthropic CLI"
+      "description": "gemini gemini-2.5-pro via gemini CLI"
     },
-    "my-codex": {
+    "gpt": {
       "type": "bash",
       "command": "codex",
-      "args": ["--non-interactive"],
+      "args": ["exec"],
       "input_method": "stdin",
-      "description": "GitHub Codex CLI"
+      "description": "GPT-5 via codex CLI"
     },
-    "my-glm": {
+    "lmstudio": {
       "type": "bash",
-      "command": "glm",
-      "args": ["--model", "glm-4-plus", "--no-stream"],
+      "command": "bash",
+      "args": ["-c", "jq -Rs '{messages: [{role: \"user\", content: .}], temperature: 0.7, max_tokens: -1}' | curl -s -X POST http://localhost:1234/v1/chat/completions -H 'Content-Type: application/json' -d @- | jq -r '.choices[0].message.content // .error.message // \"No response\"'"],
       "input_method": "stdin",
-      "description": "GLM via CLI"
-    },
-    "gemini-flash": {
-      "type": "bash",
-      "command": "gemini-cli",
-      "args": ["--model", "gemini-1.5-flash"],
-      "input_method": "stdin",
-      "description": "Gemini via custom CLI"
-    },
-    "local-ollama": {
-      "type": "bash",
-      "command": "ollama",
-      "args": ["run", "llama3.1", "--nowordwrap"],
-      "input_method": "stdin",
-      "description": "Local Llama via Ollama"
+      "description": "Local LM Studio server (requires jq)"
     },
     "echo-test": {
       "type": "bash",
@@ -44,6 +44,6 @@
       "description": "Simple echo for testing"
     }
   },
-  "default_adapter": "my-claude",
+  "default_adapter": "claude",
   "_comment": "Copy this to ~/.mcp-llm-bridge/adapters.json and edit to match your LLM CLI tools"
 }
