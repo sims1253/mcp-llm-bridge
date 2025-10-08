@@ -22,15 +22,34 @@ class ConversationManager:
         Sanitize conversation ID to prevent path traversal
         Returns empty string if ID contains path separators or becomes empty after sanitization
         """
-        # Reject IDs with path separators
-        if "/" in conversation_id or "\\" in conversation_id or ".." in conversation_id:
+        # Reject IDs with path separators or null bytes
+        if (
+            "/" in conversation_id
+            or "\\" in conversation_id
+            or ".." in conversation_id
+            or "\x00" in conversation_id
+        ):
             return ""
 
-        # Filter to alphanumeric and safe characters
-        safe_id = "".join(c for c in conversation_id if c.isalnum() or c in "-_")
+        # Filter to alphanumeric and safe characters (including dots)
+        safe_id = "".join(c for c in conversation_id if c.isalnum() or c in "-_.")
 
         # Return empty if sanitization removed everything
-        return safe_id if safe_id else ""
+        if not safe_id:
+            return ""
+
+        # Verify resolved path stays within conversation_dir
+        try:
+            conv_path = (self.conversation_dir / f"{safe_id}.jsonl").resolve()
+            conv_dir_resolved = self.conversation_dir.resolve()
+
+            # Check if the resolved path is within conversation_dir
+            if not str(conv_path).startswith(str(conv_dir_resolved)):
+                return ""
+        except (ValueError, OSError):
+            return ""
+
+        return safe_id
 
     def _get_conversation_path(self, conversation_id: str) -> Path:
         """Get path to conversation JSONL file"""
