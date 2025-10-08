@@ -78,7 +78,7 @@ def test_get_metadata(temp_conv_manager):
 
     assert metadata["id"] == conv_id
     assert metadata["message_count"] == 2
-    assert "user" in metadata["participants"]
+    assert "host" in metadata["participants"]
     assert "bot" in metadata["participants"]
     assert metadata["status"] == "active"
 
@@ -95,7 +95,7 @@ def test_get_metadata_generate_from_file(temp_conv_manager):
 
     metadata = temp_conv_manager.get_metadata(conv_id)
     assert metadata["message_count"] == 2
-    assert "user" in metadata["participants"]
+    assert "host" in metadata["participants"]
     assert "assistant" in metadata["participants"]
 
 

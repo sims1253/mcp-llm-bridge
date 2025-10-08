@@ -132,8 +132,8 @@ class AdapterManager:
                 else:
                     processed_args.append(arg)
 
-            # If no template found, append message at end
-            if not message_added:
+            # If no template found and message is not empty, append message at end
+            if not message_added and message:
                 processed_args.append(message)
 
             full_command.extend(processed_args)
@@ -144,9 +144,14 @@ class AdapterManager:
             stdin_input = message
 
         # Optionally prepend history
-        if pass_history and conversation_history and stdin_input:
+        if pass_history and conversation_history:
             history_text = self._format_history(conversation_history)
-            stdin_input = f"{history_text}\n\n---\n\n{stdin_input}"
+            if stdin_input:
+                # Both history and message: prepend history
+                stdin_input = f"{history_text}\n\n---\n\n{stdin_input}"
+            else:
+                # Only history, no message
+                stdin_input = history_text
 
         # Execute command
         start_time = time.time()

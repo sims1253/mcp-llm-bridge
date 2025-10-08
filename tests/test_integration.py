@@ -75,7 +75,7 @@ async def test_full_conversation_flow(integration_setup):
     # 4. Verify conversation state
     all_messages = conv_manager.read_messages(conv_id)
     assert len(all_messages) == 2
-    assert all_messages[0]["speaker"] == "user"
+    assert all_messages[0]["speaker"] == "host"
     assert all_messages[0]["content"] == "What is 2+2?"
     assert all_messages[1]["speaker"] == "echo"
     assert all_messages[1]["content"] == "The answer is 4"
@@ -123,7 +123,7 @@ async def test_multi_turn_conversation(integration_setup):
     # Verify conversation
     all_messages = conv_manager.read_messages(conv_id)
     assert len(all_messages) == 3
-    assert all_messages[0]["speaker"] == "user"
+    assert all_messages[0]["speaker"] == "host"
     assert all_messages[1]["speaker"] == "prefix-echo"
     assert all_messages[2]["speaker"] == "echo"
 
@@ -281,7 +281,7 @@ async def test_adapter_history_formatting(integration_setup):
     )
 
     # Should contain formatted history in compact format
-    assert "user: Initial" in result["response"]
+    assert "host: Initial" in result["response"]
     assert "assistant: Response 1" in result["response"]
     assert "user: Follow up" in result["response"]
     assert "New message" in result["response"]
@@ -302,3 +302,33 @@ def test_component_initialization(integration_setup):
     # Verify context selector
     assert context_selector is not None
     assert hasattr(context_selector, "select")
+
+
+@pytest.mark.asyncio
+async def test_call_llm_without_message(integration_setup):
+    """Test calling LLM without message parameter (history-only mode)"""
+    conv_manager, adapter_manager, context_selector = integration_setup
+
+    # Create conversation with some history
+    conv_id = conv_manager.create_conversation(initial_message="First message")
+    conv_manager.append_message(conv_id, "assistant", "First response")
+    conv_manager.append_message(conv_id, "user", "Second message")
+
+    # Get history
+    messages = conv_manager.read_messages(conv_id)
+    selected = context_selector.select(messages, "full")
+
+    # Call adapter without a message (empty string)
+    result = await adapter_manager.call_adapter(
+        adapter_name="echo",
+        message="",
+        conversation_history=selected,
+        pass_history=True,
+    )
+
+    # Should contain only the formatted history (no additional message)
+    assert "host: First message" in result["response"]
+    assert "assistant: First response" in result["response"]
+    assert "user: Second message" in result["response"]
+    # Should NOT contain separator since there's no additional message
+    assert "---" not in result["response"]

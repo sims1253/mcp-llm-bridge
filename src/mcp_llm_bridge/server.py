@@ -29,9 +29,20 @@ mcp = FastMCP("mcp-llm-bridge")
 
 @mcp.tool()
 async def create_conversation(
-    conversation_id: str | None = None, initial_message: str = "", topic: str = ""
+    conversation_id: str | None = None,
+    initial_message: str = "",
+    topic: str = "",
+    host_name: str = "",
 ) -> str:
-    """Create a new conversation with an optional initial message"""
+    """Create a new conversation with an optional initial message
+
+    Args:
+        conversation_id: Optional conversation ID
+        initial_message: Optional initial message from host
+        topic: Optional topic description
+        host_name: Optional 2-word host identifier (e.g., "claude_moderator").
+                   Will be prefixed with "host_". Defaults to "host" if not provided.
+    """
     global conversation_manager
 
     metadata = {"topic": topic} if topic else None
@@ -40,6 +51,7 @@ async def create_conversation(
         conversation_id=conversation_id,
         initial_message=initial_message,
         metadata=metadata,
+        host_name=host_name,
     )
 
     conv_path = conversation_manager._get_conversation_path(result_id)
@@ -59,12 +71,17 @@ async def create_conversation(
 async def call_llm(
     conversation_id: str,
     adapter_name: str,
-    message: str,
+    message: str = "",
     context_mode: str = "smart",
     pass_history: bool = True,
     ctx: Context | None = None,
 ) -> str:
-    """Call an LLM adapter with a message and append response to conversation"""
+    """Call an LLM adapter with optional message and append response to conversation
+
+    If message is empty and pass_history is True, the LLM will respond based on
+    conversation history alone. This is useful for multi-LLM conversations where
+    the host wants LLMs to interact without adding orchestrating messages.
+    """
     global conversation_manager, adapter_manager, context_selector
 
     # Report progress if context available

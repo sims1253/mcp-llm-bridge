@@ -50,6 +50,7 @@ class ConversationManager:
         conversation_id: str | None = None,
         initial_message: str = "",
         metadata: dict[str, Any] | None = None,
+        host_name: str = "",
     ) -> str:
         """
         Create a new conversation
@@ -58,6 +59,8 @@ class ConversationManager:
             conversation_id: Optional ID, auto-generated if not provided
             initial_message: First message in the conversation
             metadata: Optional metadata dict
+            host_name: Optional 2-word host identifier (e.g., "claude_moderator").
+                      Will be prefixed with "host_". Defaults to "host" if not provided.
 
         Returns:
             conversation_id (empty string if sanitization fails)
@@ -87,19 +90,22 @@ class ConversationManager:
 
         # Add initial message if provided
         if initial_message:
+            # Format host speaker name
+            speaker = f"host_{host_name}" if host_name else "host"
             self.append_message(
                 conversation_id=sanitized_id,
-                speaker="user",
+                speaker=speaker,
                 content=initial_message,
                 metadata={},
             )
 
         # Create metadata
+        speaker = f"host_{host_name}" if host_name else "host"
         meta = {
             "id": sanitized_id,
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
-            "participants": ["user"] if initial_message else [],
+            "participants": [speaker] if initial_message else [],
             "message_count": 1 if initial_message else 0,
             "topic": metadata.get("topic", "") if metadata else "",
             "tags": metadata.get("tags", []) if metadata else [],
