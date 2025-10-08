@@ -130,6 +130,113 @@ async def call_llm(
 
 
 @mcp.tool()
+async def call_llm_parallel(
+    conversation_id: str,
+    adapter_names: list[str],
+    message: str = "",
+    context_mode: str = "smart",
+    pass_history: bool = True,
+    ctx: Context | None = None,
+) -> str:
+    """Call multiple LLM adapters in parallel and append all responses to conversation
+
+    Args:
+        conversation_id: Conversation identifier
+        adapter_names: List of adapter names to call
+        message: Optional message to send to all adapters
+        context_mode: Context selection mode (full, smart, recent, minimal, none)
+        pass_history: Whether to pass conversation history to adapters
+        ctx: Optional context for progress reporting
+
+    Returns:
+        JSON with responses from all adapters
+    """
+    global conversation_manager, adapter_manager, context_selector
+    import asyncio
+    import json
+
+    # Report progress if context available
+    if ctx:
+        await ctx.info(
+            f"Calling {len(adapter_names)} adapters in parallel for conversation '{conversation_id}'"
+        )
+
+    # Validate inputs
+    if not adapter_names:
+        raise ValueError("adapter_names list cannot be empty")
+
+    # Check if conversation exists
+    if not conversation_manager.conversation_exists(conversation_id):
+        raise ValueError(
+            f"Conversation '{conversation_id}' does not exist. Create it first with create_conversation."
+        )
+
+    # Read conversation history once
+    messages = conversation_manager.read_messages(conversation_id)
+
+    # Select context once (all adapters get same context)
+    selected_messages = []
+    if pass_history:
+        selected_messages = context_selector.select(messages, context_mode)
+
+    # Define async function to call single adapter
+    async def call_single_adapter(adapter_name: str) -> dict:
+        try:
+            result = await adapter_manager.call_adapter(
+                adapter_name=adapter_name,
+                message=message,
+                conversation_history=selected_messages,
+                pass_history=pass_history,
+            )
+
+            # Check for errors
+            if result["metadata"].get("error"):
+                return {
+                    "adapter": adapter_name,
+                    "response": "",
+                    "error": result["metadata"]["error"],
+                    "success": False,
+                }
+
+            # Append response to conversation
+            conversation_manager.append_message(
+                conversation_id=conversation_id,
+                speaker=adapter_name,
+                content=result["response"],
+                metadata=result["metadata"],
+            )
+
+            return {
+                "adapter": adapter_name,
+                "response": result["response"],
+                "error": None,
+                "success": True,
+            }
+
+        except Exception as e:
+            return {
+                "adapter": adapter_name,
+                "response": "",
+                "error": str(e),
+                "success": False,
+            }
+
+    # Call all adapters in parallel
+    results = await asyncio.gather(*[call_single_adapter(name) for name in adapter_names])
+
+    # Format response
+    response = {
+        "conversation_id": conversation_id,
+        "total_adapters": len(adapter_names),
+        "successful": sum(1 for r in results if r["success"]),
+        "failed": sum(1 for r in results if not r["success"]),
+        "results": results,
+    }
+
+    return json.dumps(response, indent=2)
+
+
+@mcp.tool()
 async def get_recent_messages(conversation_id: str, count: int = 5) -> str:
     """Get N most recent messages from a conversation"""
     global conversation_manager
