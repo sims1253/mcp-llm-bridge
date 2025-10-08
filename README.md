@@ -76,7 +76,7 @@ Create `~/.mcp-llm-bridge/adapters.json`:
 }
 ```
 
-See `examples/adapters.json.example` for more examples including GPT, LM Studio, and Ollama.
+See `examples/adapters.json.example` for more examples including GPT, LM Studio, and OpenRouter.
 
 ### 2. Configure MCP Client
 
@@ -126,6 +126,12 @@ Example workflow:
 5. get_recent_messages:
      conversation_id: <id>
 ```
+
+### Example Conversation
+
+Multi-LLM conversation stored in JSON format:
+
+![Example conversation history](examples/history.svg)
 
 ## Tools
 
@@ -193,6 +199,25 @@ Enable "Serve on Local Network" in LM Studio settings if running from WSL.
   "input_method": "stdin",
   "description": "GPT-5 via codex CLI"
 }
+```
+
+### OpenRouter
+
+For OpenRouter API access (requires `jq`):
+
+```json
+{
+  "type": "bash",
+  "command": "bash",
+  "args": ["-c", "jq -Rs '{messages: [{role: \"user\", content: .}], model: \"z-ai/glm-4.6\"}' | curl -s -X POST https://openrouter.ai/api/v1/chat/completions -H 'Content-Type: application/json' -H \"Authorization: Bearer $OPENROUTER_API_KEY\" -H 'HTTP-Referer: https://github.com/sims1253/mcp-llm-bridge' -H 'X-Title: MCP LLM Bridge' -d @- | jq -r '.choices[0].message.content // .error.message // \"No response\"'"],
+  "input_method": "stdin",
+  "description": "OpenRouter API"
+}
+```
+
+Set your API key in `~/.bashrc` or wherever applicable:
+```bash
+export OPENROUTER_API_KEY="sk-or-v1-..."
 ```
 
 ## File Structure

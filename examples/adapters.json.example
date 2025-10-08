@@ -35,6 +35,13 @@
       "input_method": "stdin",
       "description": "Local LM Studio server (requires jq)"
     },
+    "openrouter": {
+      "type": "bash",
+      "command": "bash",
+      "args": ["-c", "jq -Rs '{messages: [{role: \"user\", content: .}], model: \"z-ai/glm-4.6\"}' | curl -s -X POST https://openrouter.ai/api/v1/chat/completions -H 'Content-Type: application/json' -H \"Authorization: Bearer $OPENROUTER_API_KEY\" -H 'HTTP-Referer: https://github.com/sims1253/mcp-llm-bridge' -H 'X-Title: MCP LLM Bridge' -d @- | jq -r '.choices[0].message.content // .error.message // \"No response\"'"],
+      "input_method": "stdin",
+      "description": "OpenRouter API (set OPENROUTER_API_KEY in ~/.bashrc or ~/.zshrc)"
+    },
     "echo-test": {
       "type": "bash",
       "command": "echo",
