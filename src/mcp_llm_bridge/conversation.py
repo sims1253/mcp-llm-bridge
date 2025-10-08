@@ -292,6 +292,8 @@ class ConversationManager:
 
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())  # Ensure durability
 
     def _update_metadata_on_append(self, conversation_id: str, speaker: str) -> None:
         """Update metadata after appending a message"""

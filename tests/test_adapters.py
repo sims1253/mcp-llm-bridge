@@ -284,8 +284,8 @@ async def test_test_adapter_unknown(echo_adapter_config):
     """Test testing unknown adapter"""
     manager = AdapterManager(echo_adapter_config)
 
-    is_available = await manager.test_adapter("unknown-adapter")
-    assert not is_available
+    with pytest.raises(ValueError, match="Unknown adapter: unknown-adapter"):
+        await manager.test_adapter("unknown-adapter")
 
 
 def test_load_adapters_with_existing_config(echo_adapter_config):

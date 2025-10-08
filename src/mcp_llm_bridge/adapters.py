@@ -260,7 +260,7 @@ class AdapterManager:
         """Test if an adapter is available"""
         adapter = self.adapters.get(adapter_name)
         if not adapter:
-            return False
+            raise ValueError(f"Unknown adapter: {adapter_name}")
 
         if adapter.type == "bash":
             command = adapter.config["command"]
@@ -280,4 +280,4 @@ class AdapterManager:
             except Exception:
                 return False
 
-        return False
+        raise ValueError(f"Unsupported adapter type: {adapter.type}")
