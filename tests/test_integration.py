@@ -280,13 +280,10 @@ async def test_adapter_history_formatting(integration_setup):
         pass_history=True,
     )
 
-    # Should contain formatted history
-    assert "=== Conversation History ===" in result["response"]
-    assert "user:" in result["response"]
-    assert "assistant:" in result["response"]
-    assert "Initial" in result["response"]
-    assert "Response 1" in result["response"]
-    assert "Follow up" in result["response"]
+    # Should contain formatted history in compact format
+    assert "user: Initial" in result["response"]
+    assert "assistant: Response 1" in result["response"]
+    assert "user: Follow up" in result["response"]
     assert "New message" in result["response"]
 
 

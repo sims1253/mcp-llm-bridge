@@ -217,14 +217,21 @@ class AdapterManager:
             }
 
     def _format_history(self, history: list[dict[str, Any]]) -> str:
-        """Format conversation history as plain text"""
-        lines = ["=== Conversation History ==="]
+        """Format conversation history in compact format"""
+        if not history:
+            return ""
 
-        for msg in history:
+        lines = []
+        for i, msg in enumerate(history):
             speaker = msg.get("speaker", "unknown")
             content = msg.get("content", "")
-            lines.append(f"\n{speaker}:")
-            lines.append(content)
+
+            # Format as "speaker: content"
+            lines.append(f"{speaker}: {content}")
+
+            # Add blank line after multi-line messages (except for last message)
+            if i < len(history) - 1 and "\n" in content:
+                lines.append("")
 
         return "\n".join(lines)
 

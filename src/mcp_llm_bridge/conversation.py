@@ -1,4 +1,4 @@
-"""Conversation management - handles JSONL file I/O for conversation history"""
+"""Conversation management - handles JSON file I/O for conversation history"""
 
 import json
 import random
@@ -32,9 +32,9 @@ class ConversationManager:
         return safe_id if safe_id else ""
 
     def _get_conversation_path(self, conversation_id: str) -> Path:
-        """Get path to conversation JSONL file"""
+        """Get path to conversation JSON file"""
         safe_id = self._sanitize_id(conversation_id)
-        return self.conversation_dir / f"{safe_id}.jsonl"
+        return self.conversation_dir / f"{safe_id}.json"
 
     def _get_metadata_path(self, conversation_id: str) -> Path:
         """Get path to conversation metadata file"""
@@ -79,7 +79,13 @@ class ConversationManager:
         if self.conversation_exists(sanitized_id):
             raise ValueError(f"Conversation {sanitized_id} already exists")
 
-        # Create conversation file with initial message
+        # Initialize empty conversation file
+        conv_path = self._get_conversation_path(sanitized_id)
+        with open(conv_path, "w", encoding="utf-8") as f:
+            json.dump([], f)
+            f.write("\n")
+
+        # Add initial message if provided
         if initial_message:
             self.append_message(
                 conversation_id=sanitized_id,
@@ -112,7 +118,7 @@ class ConversationManager:
         metadata: dict[str, Any] | None = None,
     ) -> None:
         """
-        Atomically append a message to conversation file
+        Append a message to conversation file
 
         Args:
             conversation_id: Conversation identifier
@@ -122,21 +128,25 @@ class ConversationManager:
         """
         conv_path = self._get_conversation_path(conversation_id)
 
-        # Get current message count
-        message_count = self._count_messages(conversation_id)
+        # Read existing messages
+        messages = self.read_messages(conversation_id)
 
         # Create message entry
         message = {
-            "turn": message_count + 1,
+            "turn": len(messages) + 1,
             "speaker": speaker,
             "content": content,
             "timestamp": datetime.now().isoformat(),
             "metadata": metadata or {},
         }
 
-        # Atomic append
-        with open(conv_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(message, ensure_ascii=False) + "\n")
+        # Append to messages array
+        messages.append(message)
+
+        # Write entire array back
+        with open(conv_path, "w", encoding="utf-8") as f:
+            json.dump(messages, f, indent=2, ensure_ascii=False)
+            f.write("\n")
 
         # Update metadata
         self._update_metadata_on_append(conversation_id, speaker)
@@ -163,11 +173,8 @@ class ConversationManager:
         if not conv_path.exists():
             return []
 
-        messages = []
         with open(conv_path, encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    messages.append(json.loads(line))
+            messages = json.load(f)
 
         # Apply slicing
         if start is not None or end is not None:
@@ -202,7 +209,7 @@ class ConversationManager:
         """
         conversations = []
 
-        for conv_file in self.conversation_dir.glob("*.jsonl"):
+        for conv_file in self.conversation_dir.glob("*.json"):
             conv_id = conv_file.stem
             metadata = self.get_metadata(conv_id)
             conversations.append(metadata)
@@ -215,18 +222,7 @@ class ConversationManager:
 
     def _count_messages(self, conversation_id: str) -> int:
         """Count messages in conversation"""
-        conv_path = self._get_conversation_path(conversation_id)
-
-        if not conv_path.exists():
-            return 0
-
-        count = 0
-        with open(conv_path, encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    count += 1
-
-        return count
+        return len(self.read_messages(conversation_id))
 
     def _save_metadata(self, conversation_id: str, metadata: dict[str, Any]) -> None:
         """Save metadata to file"""
