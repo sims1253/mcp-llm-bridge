@@ -1,6 +1,7 @@
-"""Conversation management - handles JSON file I/O for conversation history"""
+"""Conversation management - handles JSONL file I/O for conversation history"""
 
 import json
+import os
 import random
 from pathlib import Path
 from datetime import datetime
@@ -32,9 +33,9 @@ class ConversationManager:
         return safe_id if safe_id else ""
 
     def _get_conversation_path(self, conversation_id: str) -> Path:
-        """Get path to conversation JSON file"""
+        """Get path to conversation JSONL file"""
         safe_id = self._sanitize_id(conversation_id)
-        return self.conversation_dir / f"{safe_id}.json"
+        return self.conversation_dir / f"{safe_id}.jsonl"
 
     def _get_metadata_path(self, conversation_id: str) -> Path:
         """Get path to conversation metadata file"""
@@ -42,8 +43,15 @@ class ConversationManager:
         return self.metadata_dir / f"{safe_id}.json"
 
     def conversation_exists(self, conversation_id: str) -> bool:
-        """Check if conversation exists"""
-        return self._get_conversation_path(conversation_id).exists()
+        """Check if conversation exists (JSONL or legacy JSON)"""
+        jsonl_path = self._get_conversation_path(conversation_id)
+        if jsonl_path.exists():
+            return True
+
+        # Check for legacy .json file
+        safe_id = self._sanitize_id(conversation_id)
+        legacy_path = self.conversation_dir / f"{safe_id}.json"
+        return legacy_path.exists()
 
     def create_conversation(
         self,
@@ -82,11 +90,9 @@ class ConversationManager:
         if self.conversation_exists(sanitized_id):
             raise ValueError(f"Conversation {sanitized_id} already exists")
 
-        # Initialize empty conversation file
+        # Initialize empty JSONL conversation file
         conv_path = self._get_conversation_path(sanitized_id)
-        with open(conv_path, "w", encoding="utf-8") as f:
-            json.dump([], f)
-            f.write("\n")
+        conv_path.touch()  # Create empty file
 
         # Add initial message if provided
         if initial_message:
@@ -132,27 +138,29 @@ class ConversationManager:
             content: Message content
             metadata: Optional metadata (tokens, cost, etc.)
         """
+        # Migrate legacy JSON if needed
+        self._migrate_if_needed(conversation_id)
+
         conv_path = self._get_conversation_path(conversation_id)
 
-        # Read existing messages
-        messages = self.read_messages(conversation_id)
+        # Count existing messages to determine turn number
+        message_count = self._count_messages(conversation_id)
 
         # Create message entry
         message = {
-            "turn": len(messages) + 1,
+            "turn": message_count + 1,
             "speaker": speaker,
             "content": content,
             "timestamp": datetime.now().isoformat(),
             "metadata": metadata or {},
         }
 
-        # Append to messages array
-        messages.append(message)
-
-        # Write entire array back
-        with open(conv_path, "w", encoding="utf-8") as f:
-            json.dump(messages, f, indent=2, ensure_ascii=False)
+        # Append as single JSONL line
+        with open(conv_path, "a", encoding="utf-8") as f:
+            json.dump(message, f, ensure_ascii=False)
             f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())  # Ensure durability
 
         # Update metadata
         self._update_metadata_on_append(conversation_id, speaker)
@@ -174,13 +182,30 @@ class ConversationManager:
         Returns:
             List of message dicts
         """
+        # Migrate legacy JSON if needed
+        self._migrate_if_needed(conversation_id)
+
         conv_path = self._get_conversation_path(conversation_id)
 
         if not conv_path.exists():
             return []
 
+        messages = []
         with open(conv_path, encoding="utf-8") as f:
-            messages = json.load(f)
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                if not line:  # Skip empty lines
+                    continue
+
+                try:
+                    message = json.loads(line)
+                    messages.append(message)
+                except json.JSONDecodeError as e:
+                    # Handle corrupted lines gracefully - log and skip
+                    print(
+                        f"Warning: Skipping corrupted line {line_num} in {conversation_id}: {e}"
+                    )
+                    continue
 
         # Apply slicing
         if start is not None or end is not None:
@@ -214,11 +239,23 @@ class ConversationManager:
             List of conversation metadata dicts
         """
         conversations = []
+        seen_ids = set()
 
-        for conv_file in self.conversation_dir.glob("*.json"):
+        # First, get all JSONL files
+        for conv_file in self.conversation_dir.glob("*.jsonl"):
             conv_id = conv_file.stem
+            seen_ids.add(conv_id)
             metadata = self.get_metadata(conv_id)
             conversations.append(metadata)
+
+        # Also check for legacy JSON files that haven't been migrated yet
+        for conv_file in self.conversation_dir.glob("*.json"):
+            conv_id = conv_file.stem
+            if conv_id not in seen_ids:
+                # This is a legacy file that needs migration
+                metadata = self.get_metadata(conv_id)
+                conversations.append(metadata)
+                seen_ids.add(conv_id)
 
         # Sort
         reverse = order == "desc"
@@ -253,6 +290,7 @@ class ConversationManager:
 
     def _generate_metadata(self, conversation_id: str) -> dict[str, Any]:
         """Generate metadata from conversation file"""
+        # Note: This calls read_messages which will trigger migration if needed
         messages = self.read_messages(conversation_id)
 
         if not messages:
@@ -281,3 +319,48 @@ class ConversationManager:
         self._save_metadata(conversation_id, metadata)
 
         return metadata
+
+    def _migrate_if_needed(self, conversation_id: str) -> None:
+        """
+        Migrate legacy .json file to .jsonl format if needed.
+        Creates backup as .json.bak
+        """
+        safe_id = self._sanitize_id(conversation_id)
+        legacy_path = self.conversation_dir / f"{safe_id}.json"
+        jsonl_path = self._get_conversation_path(conversation_id)
+
+        # If JSONL file exists, no migration needed
+        if jsonl_path.exists():
+            return
+
+        # If legacy JSON doesn't exist, nothing to migrate
+        if not legacy_path.exists():
+            return
+
+        # Read legacy JSON file
+        try:
+            with open(legacy_path, encoding="utf-8") as f:
+                messages = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"Warning: Failed to read legacy file {legacy_path}: {e}")
+            return
+
+        # Write to JSONL format
+        try:
+            with open(jsonl_path, "w", encoding="utf-8") as f:
+                for message in messages:
+                    json.dump(message, f, ensure_ascii=False)
+                    f.write("\n")
+                f.flush()
+                os.fsync(f.fileno())
+        except OSError as e:
+            print(f"Warning: Failed to write JSONL file {jsonl_path}: {e}")
+            return
+
+        # Backup original as .json.bak
+        backup_path = self.conversation_dir / f"{safe_id}.json.bak"
+        try:
+            legacy_path.rename(backup_path)
+        except OSError as e:
+            print(f"Warning: Failed to create backup {backup_path}: {e}")
+            # Don't fail migration if backup fails
