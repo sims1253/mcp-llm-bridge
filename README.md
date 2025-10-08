@@ -181,13 +181,13 @@ For OpenAI-compatible APIs like LM Studio (requires `jq`):
 {
   "type": "bash",
   "command": "bash",
-  "args": ["-c", "jq -Rs '{messages: [{role: \"user\", content: .}], temperature: 0.7, max_tokens: -1}' | curl -s -X POST http://localhost:1234/v1/chat/completions -H 'Content-Type: application/json' -d @- | jq -r '.choices[0].message.content // .error.message // \"No response\"'"],
+  "args": ["-c", "jq -Rs '{messages: [{role: \"user\", content: .}], model: \"your-model-name\", temperature: 0.7, max_tokens: -1}' | curl -s -X POST http://localhost:1234/v1/chat/completions -H 'Content-Type: application/json' -d @- | jq -r '.choices[0].message.content // .error.message // \"No response\"'"],
   "input_method": "stdin",
   "description": "Local LM Studio server"
 }
 ```
 
-Enable "Serve on Local Network" in LM Studio settings if running from WSL.
+Replace `your-model-name` with the model name from LM Studio (e.g., `"apriel-1.5-15b-thinker@q6_k"`). Enable "Serve on Local Network" in LM Studio settings if running from WSL.
 
 ### GPT via Codex CLI
 
