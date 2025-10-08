@@ -25,6 +25,7 @@ class AdapterManager:
         self.config_path = Path(config_path).expanduser()
         self.adapters: dict[str, AdapterConfig] = {}
         self.default_adapter: str | None = None
+        self.default_summarization_adapter: str | None = None
         self.load_adapters()
 
     def load_adapters(self) -> None:
@@ -39,8 +40,9 @@ class AdapterManager:
         for name, adapter_config in config.get("adapters", {}).items():
             self.adapters[name] = AdapterConfig(name, adapter_config)
 
-        # Load default adapter
+        # Load default adapters
         self.default_adapter = config.get("default_adapter")
+        self.default_summarization_adapter = config.get("default_summarization_adapter")
 
     def _create_default_config(self) -> None:
         """Create default adapter configuration file"""
@@ -55,6 +57,7 @@ class AdapterManager:
                 }
             },
             "default_adapter": "example-bash",
+            "default_summarization_adapter": "example-bash",
             "_comment": "Edit this file to configure your LLM adapters. See examples in documentation.",
         }
 
@@ -253,6 +256,7 @@ class AdapterManager:
                 for name, adapter in self.adapters.items()
             ],
             "default_adapter": self.default_adapter,
+            "default_summarization_adapter": self.default_summarization_adapter,
             "config_path": str(self.config_path),
         }
 
