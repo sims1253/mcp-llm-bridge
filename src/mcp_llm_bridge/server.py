@@ -289,17 +289,13 @@ async def summarize_conversation(
     conversation_text = []
     for msg in messages:
         speaker = msg.get("speaker", "unknown")
-        content = msg.get("content", "")
+        content = msg.get("content", "").replace("\n", " ")
         conversation_text.append(f"{speaker}: {content}")
 
-    full_text = "\n\n".join(conversation_text)
+    full_text = " | ".join(conversation_text)
 
     # Create summarization prompt
-    prompt = f"""Please provide a concise summary of the following conversation:
-
-{full_text}
-
-Summary:"""
+    prompt = f"Provide a concise summary of this conversation: {full_text}"
 
     # Call adapter for summarization
     result = await adapter_manager.call_adapter(
@@ -336,17 +332,15 @@ async def get_recent_messages(conversation_id: str, count: int = 5) -> str:
     messages = conversation_manager.read_messages(conversation_id)
     recent = messages[-count:] if len(messages) > count else messages
 
-    # Format as plain text
+    # Format as compact text
     lines = []
     for msg in recent:
         speaker = msg.get("speaker", "unknown")
-        content = msg.get("content", "")
+        content = msg.get("content", "").replace("\n", " ")
         turn = msg.get("turn", "?")
-        lines.append(f"[Turn {turn}] {speaker}:")
-        lines.append(content)
-        lines.append("")
+        lines.append(f"[T{turn}]{speaker}: {content}")
 
-    output = "\n".join(lines) if lines else "No messages found."
+    output = " | ".join(lines) if lines else "No messages found."
     return output
 
 

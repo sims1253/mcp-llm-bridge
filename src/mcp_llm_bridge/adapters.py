@@ -151,7 +151,7 @@ class AdapterManager:
             history_text = self._format_history(conversation_history)
             if stdin_input:
                 # Both history and message: prepend history
-                stdin_input = f"{history_text}\n\n---\n\n{stdin_input}"
+                stdin_input = f"{history_text} | {stdin_input}"
             else:
                 # Only history, no message
                 stdin_input = history_text
@@ -230,18 +230,12 @@ class AdapterManager:
             return ""
 
         lines = []
-        for i, msg in enumerate(history):
+        for msg in history:
             speaker = msg.get("speaker", "unknown")
-            content = msg.get("content", "")
-
-            # Format as "speaker: content"
+            content = msg.get("content", "").replace("\n", " ")
             lines.append(f"{speaker}: {content}")
 
-            # Add blank line after multi-line messages (except for last message)
-            if i < len(history) - 1 and "\n" in content:
-                lines.append("")
-
-        return "\n".join(lines)
+        return " | ".join(lines)
 
     def list_adapters(self) -> dict[str, Any]:
         """List all configured adapters"""
