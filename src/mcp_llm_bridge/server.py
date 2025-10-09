@@ -64,7 +64,7 @@ async def create_conversation(
 
     import json
 
-    return json.dumps(response, indent=2)
+    return json.dumps(response)
 
 
 @mcp.tool()
@@ -233,7 +233,7 @@ async def call_llm_parallel(
         "results": results,
     }
 
-    return json.dumps(response, indent=2)
+    return json.dumps(response)
 
 
 @mcp.tool()
@@ -362,7 +362,7 @@ async def get_conversation_summary(conversation_id: str) -> str:
 
     import json
 
-    return json.dumps(metadata, indent=2)
+    return json.dumps(metadata)
 
 
 @mcp.tool()
@@ -378,7 +378,7 @@ async def list_conversations(limit: int = 20, sort_by: str = "updated_at") -> st
 
     result = {"total": len(conversations), "conversations": conversations}
 
-    return json.dumps(result, indent=2)
+    return json.dumps(result)
 
 
 @mcp.tool()
@@ -396,7 +396,7 @@ async def list_adapters(test_availability: bool = False) -> str:
 
     import json
 
-    return json.dumps(adapters_info, indent=2)
+    return json.dumps(adapters_info)
 
 
 if __name__ == "__main__":
