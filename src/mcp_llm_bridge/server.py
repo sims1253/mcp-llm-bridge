@@ -237,6 +237,95 @@ async def call_llm_parallel(
 
 
 @mcp.tool()
+async def summarize_conversation(
+    conversation_id: str,
+    adapter_name: str | None = None,
+    ctx: Context | None = None,
+) -> str:
+    """Generate a summary of the conversation using an LLM adapter
+
+    Args:
+        conversation_id: Conversation identifier
+        adapter_name: Optional adapter to use (defaults to default_summarization_adapter)
+        ctx: Optional context for progress reporting
+
+    Returns:
+        Summary of the conversation
+    """
+    global conversation_manager, adapter_manager
+    import json
+
+    # Check if conversation exists
+    if not conversation_manager.conversation_exists(conversation_id):
+        raise ValueError(f"Conversation '{conversation_id}' does not exist.")
+
+    # Determine which adapter to use
+    if adapter_name is None:
+        adapter_name = adapter_manager.default_summarization_adapter
+        if adapter_name is None:
+            raise ValueError(
+                "No adapter specified and no default_summarization_adapter configured"
+            )
+
+    # Report progress if context available
+    if ctx:
+        await ctx.info(
+            f"Generating summary of '{conversation_id}' using '{adapter_name}'"
+        )
+
+    # Read all messages
+    messages = conversation_manager.read_messages(conversation_id)
+
+    if not messages:
+        return json.dumps(
+            {
+                "conversation_id": conversation_id,
+                "summary": "Empty conversation - no messages to summarize.",
+                "message_count": 0,
+            }
+        )
+
+    # Format conversation for summarization
+    conversation_text = []
+    for msg in messages:
+        speaker = msg.get("speaker", "unknown")
+        content = msg.get("content", "")
+        conversation_text.append(f"{speaker}: {content}")
+
+    full_text = "\n\n".join(conversation_text)
+
+    # Create summarization prompt
+    prompt = f"""Please provide a concise summary of the following conversation:
+
+{full_text}
+
+Summary:"""
+
+    # Call adapter for summarization
+    result = await adapter_manager.call_adapter(
+        adapter_name=adapter_name,
+        message=prompt,
+        conversation_history=[],
+        pass_history=False,
+    )
+
+    # Check for errors
+    if result["metadata"].get("error"):
+        error_msg = result["metadata"]["error"]
+        raise ValueError(f"Error generating summary with '{adapter_name}': {error_msg}")
+
+    # Return summary
+    response = {
+        "conversation_id": conversation_id,
+        "summary": result["response"].strip(),
+        "message_count": len(messages),
+        "summarized_by": adapter_name,
+    }
+
+    return json.dumps(response)
+
+
+@mcp.tool()
 async def get_recent_messages(conversation_id: str, count: int = 5) -> str:
     """Get N most recent messages from a conversation"""
     global conversation_manager
