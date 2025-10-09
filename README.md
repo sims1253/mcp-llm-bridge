@@ -152,6 +152,7 @@ Multi-LLM conversation stored in JSON format:
 - `create_conversation`
 - `call_llm`
 - `call_llm_parallel` - Call multiple adapters concurrently for faster multi-participant conversations
+- `summarize_conversation` - Generate conversation summary using cheap/fast adapter (saves host tokens)
 - `get_recent_messages`
 - `get_conversation_summary`
 - `list_conversations`
