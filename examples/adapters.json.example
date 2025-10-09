@@ -52,5 +52,6 @@
     }
   },
   "default_adapter": "claude",
-  "_comment": "Copy this to ~/.mcp-llm-bridge/adapters.json and edit to match your LLM CLI tools"
+  "default_summarization_adapter": "qwen",
+  "_comment": "Copy this to ~/.mcp-llm-bridge/adapters.json and edit to match your LLM CLI tools. Use a cheap/fast model for default_summarization_adapter."
 }

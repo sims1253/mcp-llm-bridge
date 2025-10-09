@@ -72,9 +72,14 @@ Create `~/.mcp-llm-bridge/adapters.json`:
       "description": "gemini gemini-2.5-pro via gemini CLI"
     }
   },
-  "default_adapter": "claude"
+  "default_adapter": "claude",
+  "default_summarization_adapter": "qwen"
 }
 ```
+
+Configuration fields:
+- `default_adapter`: Main adapter for general use
+- `default_summarization_adapter`: Cheap/fast adapter for summarization tasks (optional, reduces token costs)
 
 See `examples/adapters.json.example` for more examples including GPT, LM Studio, and OpenRouter.
 
@@ -127,6 +132,15 @@ Example workflow:
      conversation_id: <id>
 ```
 
+For parallel execution (faster multi-participant conversations):
+
+```
+call_llm_parallel:
+  conversation_id: <id>
+  adapter_names: ["claude", "qwen", "gemini"]
+  message: "What are your thoughts?"
+```
+
 ### Example Conversation
 
 Multi-LLM conversation stored in JSON format:
@@ -137,6 +151,7 @@ Multi-LLM conversation stored in JSON format:
 
 - `create_conversation`
 - `call_llm`
+- `call_llm_parallel` - Call multiple adapters concurrently for faster multi-participant conversations
 - `get_recent_messages`
 - `get_conversation_summary`
 - `list_conversations`
