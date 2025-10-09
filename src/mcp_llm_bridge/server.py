@@ -38,7 +38,8 @@ async def create_conversation(
 
     Args:
         conversation_id: Optional conversation ID
-        initial_message: Optional initial message from host
+        initial_message: Optional initial message from host. If provided, the first call_llm
+                        can use empty message parameter to avoid duplication (unless adding new context).
         topic: Optional topic description
         host_name: Optional 2-word host identifier (e.g., "claude_moderator").
                    Will be prefixed with "host_". Defaults to "host" if not provided.
@@ -78,9 +79,12 @@ async def call_llm(
 ) -> str:
     """Call an LLM adapter with optional message and append response to conversation
 
-    If message is empty and pass_history is True, the LLM will respond based on
-    conversation history alone. This is useful for multi-LLM conversations where
-    the host wants LLMs to interact without adding orchestrating messages.
+    IMPORTANT: For the FIRST adapter call after create_conversation with initial_message,
+    leave message empty if no additional context is needed. This avoids duplicate content.
+
+    Use message parameter to add new context or instructions. When message is provided,
+    it's sent alongside conversation history (if pass_history=true). Empty message makes
+    the LLM respond only to existing conversation history.
     """
     global conversation_manager, adapter_manager, context_selector
 
@@ -195,6 +199,7 @@ async def call_llm_parallel(
                     "adapter": adapter_name,
                     "response": "",
                     "error": result["metadata"]["error"],
+                    "execution_time_ms": result["metadata"].get("execution_time_ms", 0),
                     "success": False,
                 }
 
@@ -210,6 +215,7 @@ async def call_llm_parallel(
                 "adapter": adapter_name,
                 "response": result["response"],
                 "error": None,
+                "execution_time_ms": result["metadata"].get("execution_time_ms", 0),
                 "success": True,
             }
 
@@ -218,6 +224,7 @@ async def call_llm_parallel(
                 "adapter": adapter_name,
                 "response": "",
                 "error": str(e),
+                "execution_time_ms": 0,
                 "success": False,
             }
 
