@@ -222,7 +222,9 @@ async def call_llm_parallel(
             }
 
     # Call all adapters in parallel
-    results = await asyncio.gather(*[call_single_adapter(name) for name in adapter_names])
+    results = await asyncio.gather(
+        *[call_single_adapter(name) for name in adapter_names]
+    )
 
     # Format response
     response = {
